@@ -16,8 +16,8 @@ void setup()
   
 //   The following lines can be uncommented to set the date and time
   rtc.setDOW(TUESDAY);     // Set Day-of-Week to SUNDAY
-  rtc.setTime(1, 46, 0);     // Set the time to 12:00:00 (24hr format)
-  rtc.setDate(26, 01, 2021);   // Set the date to January 1st, 2014
+  rtc.setTime(4, 0, 0);     // Set the time to 12:00:00 (24hr format)
+  rtc.setDate(15, 02, 2021);   // Set the date to January 1st, 2014
 }
 
 // Code from the Demo Example of the DS3231 Library

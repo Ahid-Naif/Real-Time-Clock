@@ -38,10 +38,11 @@
 #define YELLOW  0xFFE0
 #define WHITE   0xFFFF
 
-Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
+//SWTFT tft;
+//SWTFT tft;
 // If using the shield, all control and data lines are fixed, and
 // a simpler declaration can optionally be used:
-// Adafruit_TFTLCD tft;
+ Adafruit_TFTLCD tft;
 
 void setup(void) {
   Serial.begin(9600);
@@ -58,8 +59,8 @@ void setup(void) {
   tft.reset();
 
   uint16_t identifier = tft.readID();
-identifier=0x9341;
-/*
+//identifier=0x9341;
+
   if(identifier == 0x9325) {
     Serial.println(F("Found ILI9325 LCD driver"));  //  هــــــنــــــــــــا   
   } else if(identifier == 0x9328) {
@@ -81,7 +82,7 @@ identifier=0x9341;
     Serial.println(F("matches the tutorial."));
     return;
   }
-*/
+
   tft.begin(identifier);
 
   Serial.println(F("Benchmark                Time (microseconds)"));

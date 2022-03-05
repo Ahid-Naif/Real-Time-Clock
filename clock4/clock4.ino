@@ -1,5 +1,7 @@
+//#include <SPFD5408_Adafruit_TFTLCD.h>
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_TFTLCD.h> 
+#include <TouchScreen.h>
 
 #include <DS3231.h>
 
@@ -32,6 +34,16 @@ int ledPin = 12, lcd_power = 51, lcd_status = 0;
 #define LCD_RD A0
 #define LCD_RESET A4
 
+#define XP 9
+#define YP A2
+#define XM A3
+#define YM 8
+
+#define TS_MINX 100
+#define TS_MINY 140
+#define TS_MAXX 950
+#define TS_MAXY 890
+
 // Agar warna mudah dimengerti (Human Readable color):
 #define TFT_BLACK   0x0000
 #define TFT_BLUE    0x001F
@@ -44,6 +56,8 @@ int ledPin = 12, lcd_power = 51, lcd_status = 0;
 #define TFT_GREY    0x5AEB
 
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
+
+TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);   
 
 float sx = 0, sy = 1, mx = 1, my = 0, hx = -1, hy = 0;    
 float sdeg = 0, mdeg = 0, hdeg = 0;
@@ -80,53 +94,11 @@ void setup(void) {
   tft.begin(0x9341); 
   tft.setRotation(2);
   tft.fillScreen(TFT_BLACK);// background color
-  tft.setCursor(50, 200);
-  tft.setTextColor(TFT_WHITE);
-  tft.setTextSize(6);
-  tft.print("RAW PRO");
-  tft.setCursor(130, 400);
-  tft.setTextSize(2);
-  tft.print("Made in");
-  tft.setCursor(100, 420);
-  tft.print("Saudi Arabia");
-  delay(10000);
-  digitalWrite(lcd_power, HIGH);
-  lcd_status = 1;
-  isClockOn = true;
-  clockTimer = millis();
-  initializeClock();
 }
 
 void loop() {
-    
-  touchLogic();
+   touchLogic();
   
-  if(isClockOn)
-  {
-    if(millis() - clockTimer < clockOnDuration) // Here insert Mosfet Control High digital write High
-    {
-      clockLogic();
-    }
-    else // digital write LOW
-    {
-      lcd_status = 0;
-      isClockOn = false;
-      tft.fillScreen(TFT_BLACK);// background color
-    }
-    
-  }
-  else
-  {
-    digitalWrite(lcd_power, LOW);
-    if (digitalRead(pir) == HIGH) 
-    { 
-      digitalWrite(lcd_power, HIGH);
-      lcd_status = 1;
-      isClockOn = true;
-      clockTimer = millis();
-      initializeClock();
-    }
-  }
   
   LEDStripLogic();
 }
@@ -149,6 +121,7 @@ String getValue(String data, char separator, int index)
 
 void LEDStripLogic()
 {
+ // Serial.println("hello world");
   if(waiting)
   {
     if(millis() - trigger_time >= 20)
@@ -233,12 +206,16 @@ void clockLogic()
       timer = millis();
       initial = 0;
       // Erase hour and minute hand positions every minute
+   //   tft.drawLine(ohx, ohy, xpos, tft.height()/2, TFT_BLACK);
       tft.drawTriangle(ohx, ohy, xpos - 5, tft.height()/2 - 5, xpos + 5, tft.height()/2 + 5, TFT_BLACK);
       ohx = hx * 72 + xpos + 1;
       ohy = hy * 72 + tft.height()/2;
+   //   tft.drawLine(omx, omy, xpos, tft.height()/2, TFT_BLACK);
       tft.drawTriangle(omx, omy, xpos - 5, tft.height()/2 - 5, xpos + 5, tft.height()/2 + 5, TFT_BLACK);
       omx = mx * 94 + xpos;
-      omy = my * 94 + tft.height()/2; 
+      omy = my * 94 + tft.height()/2;
+
+      
     }
 
     // Redraw new hand positions, hour and minute hands not erased here to avoid flicker
@@ -246,15 +223,47 @@ void clockLogic()
     osx = sx * 100 + xpos + 1;
     osy = sy * 100 + tft.height()/2;
     tft.drawLine(osx, osy, xpos, tft.height()/2, TFT_WHITE);
+   // tft.fillTriangle(xpos, tft.height()/2, osx - 5, osy - 5, osx + 5, osy + 5, TFT_WHITE);
+  //  tft.drawLine(ohx, ohy, xpos, tft.height()/2, TFT_WHITE);
     tft.drawTriangle(ohx, ohy, xpos - 5, tft.height()/2 - 5, xpos + 5, tft.height()/2 + 5, TFT_WHITE);
+// tft.drawLine(omx, omy, xpos, tft.height()/2, TFT_WHITE);
     tft.drawTriangle(omx, omy, xpos - 5, tft.height()/2 - 5, xpos + 5, tft.height()/2 + 5, TFT_WHITE);
-    tft.fillCircle(xpos, tft.height()/2, 5, TFT_WHITE); 
+    //tft.drawLine(osx, osy, xpos, tft.height()/2, TFT_WHITE);
+    tft.fillCircle(xpos, tft.height()/2, 5, TFT_WHITE);
+
+ 
   }
 }
 
 void touchLogic()
 {
-  currtouched = cap.touched();
+  /*
+  TSPoint p = ts.getPoint();  //Get touch point
+  //This is important, because the libraries are sharing pins
+  pinMode(XM, OUTPUT);
+  pinMode(YP, OUTPUT);
+  
+  if(p.z > ts.pressureThreshhold) 
+  {
+    p.x = map(p.x, TS_MINX, TS_MAXX, 0, 480);
+    p.y = map(p.y, TS_MAXY, TS_MINY, 0, 320);
+    if(p.x>tft.height()-100 && p.x<tft.height()-5 && p.y>0 && p.y<tft.width()/3 - 10) 
+    { 
+      ledBrightness = 80;
+    }
+
+    if(p.x>tft.height()-100 && p.x<tft.height()-5 && p.y>tft.width()/3 && p.y< 2*tft.width()/3 - 10) 
+    {        
+      ledBrightness = 200;  
+    }
+
+    if(p.x>tft.height()-100 && p.x<tft.height()-5 && p.y>2*tft.width()/3 && p.y< tft.width()) 
+    {        
+      ledBrightness = 255;  
+    }
+  }
+  */
+   currtouched = cap.touched();
   
   for (uint8_t i=0; i<12; i++) {
     // it if *is* touched and *wasnt* touched before, alert!
@@ -286,7 +295,10 @@ void initializeClock()
   tft.setRotation(2);
   tft.setTextColor(TFT_WHITE);// text color
   tft.fillScreen(TFT_BLACK);// background color
-  delay(2000);
+
+//  tft.drawLine(0,tft.height()-5, tft.width()/3 - 10, tft.height()-5, TFT_WHITE);
+ // tft.drawLine(tft.width()/3,tft.height()-5, 2 * tft.width()/3 - 10, tft.height()-5, TFT_WHITE);  
+ // tft.drawLine(2*tft.width()/3,tft.height()-5, tft.width(), tft.height()-5, TFT_WHITE);
 
   xpos = tft.width() / 2; 
    
@@ -341,6 +353,7 @@ void initializeClock()
         break;
     }
 
+    //tft.drawLine(x0, yy0, x1, yy1, TFT_WHITE); 
   }
   
   for (int i = 0; i < 360; i += 6) {
@@ -362,4 +375,5 @@ void initializeClock()
   mm  = atoi(minutes.c_str ()); 
   String seconds = getValue(rtc.getTimeStr(), ':', 2);
   ss  = atoi(seconds.c_str ()); 
+  
 }
